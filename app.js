@@ -30,23 +30,28 @@ function loadQuestion() {
         document.getElementById('question').textContent = 'Loading questions...';
         return;
     }
+    // Start with first 10 questions, expand based on proficiency
     let availableQuestions = examQuestions.filter(q => 
-        progress[currentExam].seen.length < 10 ? q.id <= 10 : true
+        progress[currentExam].seen.length < 10 ? examQuestions.indexOf(q) < 10 : true
     );
-    // Filter out questions not yet introduced based on proficiency
     if (progress[currentExam].correct / (progress[currentExam].seen.length || 1) < 0.8) {
-        availableQuestions = availableQuestions.filter(q => q.id <= 10);
+        availableQuestions = availableQuestions.filter(q => examQuestions.indexOf(q) < 10);
     }
     const unseen = availableQuestions.filter(q => !progress[currentExam].seen.includes(q.id));
     const toShow = unseen.length > 0 ? unseen : availableQuestions;
     currentQuestion = toShow[Math.floor(Math.random() * toShow.length)];
     
     document.getElementById('question').textContent = currentQuestion.question;
+    document.getElementById('reference').textContent = 'Reference: ' + currentQuestion.refs;
     const answersDiv = document.getElementById('answers');
     answersDiv.innerHTML = '';
-    let answers = [currentQuestion.correct];
+    let answers = [currentQuestion.answers[currentQuestion.correct]];
     if (progress[currentExam].pass > 1) {
-        const randomIncorrect = currentQuestion.incorrect[Math.floor(Math.random() * currentQuestion.incorrect.length)];
+        // Pick one random incorrect answer
+        let incorrectOptions = currentQuestion.answers
+            .map((ans, index) => ({ ans, index }))
+            .filter(opt => opt.index !== currentQuestion.correct);
+        const randomIncorrect = incorrectOptions[Math.floor(Math.random() * incorrectOptions.length)].ans;
         answers.push(randomIncorrect);
         answers = answers.sort(() => Math.random() - 0.5); // Shuffle
     }
@@ -64,21 +69,22 @@ function loadQuestion() {
 function checkAnswer(selected) {
     const feedback = document.getElementById('feedback');
     const answers = document.querySelectorAll('.answer');
+    const correctAnswer = currentQuestion.answers[currentQuestion.correct];
     if (!progress[currentExam].seen.includes(currentQuestion.id)) {
         progress[currentExam].seen.push(currentQuestion.id);
     }
-    if (selected === currentQuestion.correct) {
+    if (selected === correctAnswer) {
         feedback.textContent = 'Correct!';
         feedback.style.color = 'green';
         progress[currentExam].correct++;
         answers.forEach(ans => {
-            if (ans.textContent === currentQuestion.correct) ans.classList.add('correct');
+            if (ans.textContent === correctAnswer) ans.classList.add('correct');
         });
     } else {
-        feedback.textContent = 'Incorrect! The right answer is: ' + currentQuestion.correct;
+        feedback.textContent = 'Incorrect! The right answer is: ' + correctAnswer;
         feedback.style.color = 'red';
         answers.forEach(ans => {
-            if (ans.textContent === currentQuestion.correct) ans.classList.add('correct');
+            if (ans.textContent === correctAnswer) ans.classList.add('correct');
             else ans.classList.add('incorrect');
         });
     }
