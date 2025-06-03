@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ham Radio Exam Prep</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        select, button {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #question, #answers, #affiliates {
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .answer {
+            padding: 10px;
+            margin: 5px 0;
+            background: #e0f7fa;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .correct { background: #c8e6c9; }
+        .incorrect { background: #ffcdd2; }
+        #feedback {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        #affiliates {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #affiliates a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        #affiliates a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ham Radio Exam Prep</h1>
+        <label for="examLevel">Select Exam:</label>
+        <select id="examLevel">
+            <option value="technician">Technician</option>
+            <option value="general">General</option>
+            <option value="extra">Extra</option>
+        </select>
+        <div id="question"></div>
+        <div id="answers"></div>
+        <div id="feedback"></div>
+        <button onclick="nextQuestion()">Next Question</button>
+        <div id="progress">Progress: 0/10 correct</div>
+        <div id="affiliates">
+            <h3>Recommended Resources</h3>
+            <p>Protect your privacy when you register with the FCC by using a virtual mailing address from <a href="https://ipostal1.com/?ref=6716" target="_blank">iPostal1 (Affiliate Link)</a></p>
+            <p>
+            <p style="font-size: 12px; color: #666;">We may earn a commission from purchases made through these links.</p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
