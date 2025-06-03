@@ -1,9 +1,9 @@
 // Initialize question bank
 let questionBank = { technician: [], general: [], extra: [] };
 let progress = JSON.parse(localStorage.getItem('hamPrepProgress')) || {
-    technician: { pass: 1, correct: 0, seen: [] },
-    general: { pass: 1, correct: 0, seen: [] },
-    extra: { pass: 1, correct: 0, seen: [] }
+    technician: { pass: 1, correct: 0, seen: [], batch: 0 },
+    general: { pass: 1, correct: 0, seen: [], batch: 0 },
+    extra: { pass: 1, correct: 0, seen: [], batch: 0 }
 };
 let currentExam = 'technician';
 let currentQuestion = null;
@@ -17,6 +17,10 @@ async function loadQuestionPools() {
         questionBank.general = await genResponse.json();
         const extraResponse = await fetch('extra.json');
         questionBank.extra = await extraResponse.json();
+        // Sort questions by ID for consistent batching
+        for (let exam in questionBank) {
+            questionBank[exam].sort((a, b) => a.id.localeCompare(b.id));
+        }
         loadQuestion();
     } catch (error) {
         console.error('Error loading question pools:', error);
@@ -30,12 +34,40 @@ function loadQuestion() {
         document.getElementById('question').textContent = 'Loading questions...';
         return;
     }
-    // Start with first 10 questions, expand based on proficiency
-    let availableQuestions = examQuestions.filter(q => 
-        progress[currentExam].seen.length < 10 ? examQuestions.indexOf(q) < 10 : true
+    // Define current batch (0 = first 10, 1 = next 10, etc.)
+    const batchSize = 10;
+    const currentBatch = progress[currentExam].batch;
+    const startIndex = currentBatch * batchSize;
+    const endIndex = startIndex + batchSize;
+    // Filter questions to current batch
+    let availableQuestions = examQuestions.filter((q, index) => 
+        index >= startIndex && index < endIndex
     );
-    if (progress[currentExam].correct / (progress[currentExam].seen.length || 1) < 0.8) {
-        availableQuestions = availableQuestions.filter(q => examQuestions.indexOf(q) < 10);
+    // Check proficiency: if 80% correct, move to next batch
+    const totalSeen = progress[currentExam].seen.length || 1;
+    if (progress[currentExam].correct / totalSeen >= 0.8 && availableQuestions.length > 0) {
+        progress[currentExam].batch++;
+        progress[currentExam].seen = [];
+        progress[currentExam].correct = 0;
+        localStorage.setItem('hamPrepProgress', JSON.stringify(progress));
+        // Recalculate available questions for new batch
+        const newStartIndex = progress[currentExam].batch * batchSize;
+        const newEndIndex = newStartIndex + batchSize;
+        availableQuestions = examQuestions.filter((q, index) => 
+            index >= newStartIndex && index < newEndIndex
+        );
+    }
+    // If no questions in batch (e.g., end of pool), reset to first batch
+    if (availableQuestions.length === 0) {
+        progress[currentExam].batch = 0;
+        progress[currentExam].seen = [];
+        progress[currentExam].correct = 0;
+        localStorage.setItem('hamPrepProgress', JSON.stringify(progress));
+        const resetStartIndex = 0;
+        const resetEndIndex = batchSize;
+        availableQuestions = examQuestions.filter((q, index) => 
+            index >= resetStartIndex && index < resetEndIndex
+        );
     }
     const unseen = availableQuestions.filter(q => !progress[currentExam].seen.includes(q.id));
     const toShow = unseen.length > 0 ? unseen : availableQuestions;
@@ -93,18 +125,15 @@ function checkAnswer(selected) {
         progress[currentExam].pass++;
         progress[currentExam].seen = [];
         progress[currentExam].correct = 0;
+        progress[currentExam].batch = 0; // Reset batch on full completion
     }
     updateProgress();
-}
-
-function nextQuestion() {
-    loadQuestion();
 }
 
 function updateProgress() {
     const total = progress[currentExam].seen.length || 1;
     document.getElementById('progress').textContent = 
-        `Progress: ${progress[currentExam].correct}/${total} correct (Pass ${progress[currentExam].pass})`;
+        `Progress: ${progress[currentExam].correct}/${total} correct (Pass ${progress[currentExam].pass}, Batch ${progress[currentExam].batch + 1})`;
 }
 
 // Handle exam selection
